@@ -13,19 +13,30 @@ class ChatManager:
             raise ValueError("OPENAI_API_KEY environment variable is required")
         
         # Initialize OpenAI chat model
-        # the newest OpenAI model is "gpt-5" which was released August 7, 2025.
-        # do not change this unless explicitly requested by the user
-        self.llm = ChatOpenAI(
-            api_key=self.openai_api_key,
-            model="gpt-5",
-            temperature=0.7
-        )
+        # Use configurable model with sensible default
+        self.model_name = os.environ.get("OPENAI_MODEL", "gpt-4o-mini")
+        
+        try:
+            self.llm = ChatOpenAI(
+                api_key=self.openai_api_key,
+                model=self.model_name,
+                temperature=0.7
+            )
+        except Exception as e:
+            raise ValueError(f"Failed to initialize OpenAI model '{self.model_name}': {str(e)}")
     
     def get_response(self, user_message: str) -> str:
         """Generate response using RAG approach"""
         try:
+            # Input validation
+            if not user_message or not user_message.strip():
+                return "Please provide a valid question or message."
+            
             # Retrieve relevant document chunks
-            relevant_chunks = self.embedding_manager.similarity_search(user_message, k=5)
+            try:
+                relevant_chunks = self.embedding_manager.similarity_search(user_message, k=5)
+            except Exception as e:
+                return f"Error retrieving relevant documents: {str(e)}"
             
             if not relevant_chunks:
                 return "I don't have any documents to reference. Please upload a PDF first."
@@ -47,17 +58,33 @@ class ChatManager:
             - If the context doesn't contain enough information, say so
             - Keep your response clear and helpful"""
             
-            # Generate response
-            messages = [
-                SystemMessage(content=system_prompt),
-                HumanMessage(content=user_message)
-            ]
-            
-            response = self.llm.invoke(messages)
-            return response.content
+            # Generate response with error handling
+            try:
+                messages = [
+                    SystemMessage(content=system_prompt),
+                    HumanMessage(content=user_message)
+                ]
+                
+                response = self.llm.invoke(messages)
+                
+                if hasattr(response, 'content') and response.content:
+                    return response.content
+                else:
+                    return "I apologize, but I couldn't generate a proper response. Please try again."
+                    
+            except Exception as openai_error:
+                error_msg = str(openai_error).lower()
+                if "rate limit" in error_msg:
+                    return "I'm currently experiencing high demand. Please try again in a moment."
+                elif "insufficient_quota" in error_msg or "quota" in error_msg:
+                    return "The OpenAI API quota has been exceeded. Please check your API credits."
+                elif "invalid_api_key" in error_msg:
+                    return "There's an issue with the API configuration. Please contact support."
+                else:
+                    return f"I encountered an error while processing your request: {str(openai_error)}"
             
         except Exception as e:
-            raise Exception(f"Error generating response: {str(e)}")
+            return f"An unexpected error occurred: {str(e)}"
     
     def _prepare_context(self, chunks: List[Dict[str, Any]]) -> str:
         """Prepare context string from retrieved chunks"""
