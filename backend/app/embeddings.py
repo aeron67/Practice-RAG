@@ -24,15 +24,23 @@ class EmbeddingManager:
             model="text-embedding-3-small"  # Latest embedding model
         )
         
-        # Initialize database connection with SSL and robustness improvements
+        # Initialize database connection with conditional SSL for local development
+        prepared_url = self._prepare_database_url(self.database_url)
+        parsed = urlparse(prepared_url)
+        is_local = parsed.hostname in ("localhost", "127.0.0.1")
+
+        connect_args = {"connect_timeout": 30}
+        if not is_local:
+            connect_args["sslmode"] = "require"
+        else:
+            # Disable SSL when talking to local Docker/Postgres
+            connect_args["sslmode"] = "disable"
+
         self.engine = create_engine(
-            self._prepare_database_url(self.database_url),
+            prepared_url,
             pool_pre_ping=True,  # Enable connection health checks
             pool_recycle=3600,   # Recycle connections every hour
-            connect_args={
-                "connect_timeout": 30,  # 30 second connection timeout
-                "sslmode": "require"     # Require SSL for security
-            }
+            connect_args=connect_args
         )
         self._setup_database()
     
