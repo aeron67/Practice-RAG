@@ -40,6 +40,22 @@ def get_documents():
         pass
     return []
 
+def delete_document(filename):
+    """Delete a specific document"""
+    try:
+        response = requests.delete(f"{BACKEND_URL}/documents/{filename}")
+        return response
+    except Exception as e:
+        return None
+
+def delete_all_documents():
+    """Delete all documents"""
+    try:
+        response = requests.delete(f"{BACKEND_URL}/documents")
+        return response
+    except Exception as e:
+        return None
+
 # Main app
 def main():
     st.title("📚 RAG Chatbot")
@@ -75,8 +91,45 @@ def main():
         st.subheader("📋 Uploaded Documents")
         documents = get_documents()
         if documents:
+            # Delete All button
+            if st.button("🗑️ Delete All Documents", type="secondary", help="Delete all uploaded documents and their embeddings"):
+                if st.session_state.get("confirm_delete_all", False):
+                    with st.spinner("Deleting all documents..."):
+                        response = delete_all_documents()
+                        if response and response.status_code == 200:
+                            result = response.json()
+                            st.success(f"✅ {result['message']}")
+                            st.info(f"Deleted {result.get('deleted_chunks', 0)} chunks")
+                            st.session_state.confirm_delete_all = False
+                            st.rerun()
+                        else:
+                            st.error("❌ Error deleting documents")
+                else:
+                    st.session_state.confirm_delete_all = True
+                    st.warning("⚠️ Click again to confirm deletion of ALL documents")
+                    st.rerun()
+            
+            # Individual document delete buttons
             for doc in documents:
-                st.write(f"📄 {doc}")
+                col1, col2 = st.columns([4, 1])
+                with col1:
+                    st.write(f"📄 {doc}")
+                with col2:
+                    if st.button("🗑️", key=f"delete_{doc}", help=f"Delete {doc}"):
+                        if st.session_state.get(f"confirm_delete_{doc}", False):
+                            with st.spinner(f"Deleting {doc}..."):
+                                response = delete_document(doc)
+                                if response and response.status_code == 200:
+                                    result = response.json()
+                                    st.success(f"✅ {result['message']}")
+                                    st.session_state[f"confirm_delete_{doc}"] = False
+                                    st.rerun()
+                                else:
+                                    st.error(f"❌ Error deleting {doc}")
+                        else:
+                            st.session_state[f"confirm_delete_{doc}"] = True
+                            st.warning(f"⚠️ Click again to confirm deletion of {doc}")
+                            st.rerun()
         else:
             st.write("No documents uploaded yet")
     

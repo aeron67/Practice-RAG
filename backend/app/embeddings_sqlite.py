@@ -167,3 +167,50 @@ class EmbeddingManager:
                 return [row[0] for row in cursor.fetchall()]
         except Exception as e:
             raise Exception(f"Error retrieving document list: {str(e)}")
+    
+    def delete_document(self, filename: str) -> bool:
+        """Delete a document and all its embeddings from the database"""
+        try:
+            with sqlite3.connect(self.db_path) as conn:
+                cursor = conn.cursor()
+                
+                # Check if document exists
+                cursor.execute("SELECT COUNT(*) FROM documents WHERE filename = ?", (filename,))
+                count = cursor.fetchone()[0]
+                
+                if count == 0:
+                    return False  # Document not found
+                
+                # Delete all chunks for this document
+                cursor.execute("DELETE FROM documents WHERE filename = ?", (filename,))
+                conn.commit()
+                
+                # Check if any rows were deleted
+                if cursor.rowcount > 0:
+                    print(f"Successfully deleted {cursor.rowcount} chunks for document: {filename}")
+                    return True
+                else:
+                    return False
+                    
+        except Exception as e:
+            raise Exception(f"Error deleting document '{filename}': {str(e)}")
+    
+    def delete_all_documents(self) -> int:
+        """Delete all documents and embeddings from the database"""
+        try:
+            with sqlite3.connect(self.db_path) as conn:
+                cursor = conn.cursor()
+                
+                # Count documents before deletion
+                cursor.execute("SELECT COUNT(*) FROM documents")
+                count_before = cursor.fetchone()[0]
+                
+                # Delete all documents
+                cursor.execute("DELETE FROM documents")
+                conn.commit()
+                
+                print(f"Successfully deleted all documents ({count_before} chunks removed)")
+                return count_before
+                
+        except Exception as e:
+            raise Exception(f"Error deleting all documents: {str(e)}")

@@ -72,5 +72,26 @@ async def list_documents():
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error retrieving documents: {str(e)}")
 
+@app.delete("/documents/{filename}")
+async def delete_document(filename: str):
+    """Delete a specific document and its embeddings"""
+    try:
+        success = embedding_manager.delete_document(filename)
+        if success:
+            return {"message": f"Document '{filename}' deleted successfully"}
+        else:
+            raise HTTPException(status_code=404, detail=f"Document '{filename}' not found")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error deleting document: {str(e)}")
+
+@app.delete("/documents")
+async def delete_all_documents():
+    """Delete all documents and their embeddings"""
+    try:
+        deleted_count = embedding_manager.delete_all_documents()
+        return {"message": f"All documents deleted successfully", "deleted_chunks": deleted_count}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error deleting all documents: {str(e)}")
+
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000)
