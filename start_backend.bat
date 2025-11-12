@@ -1,15 +1,37 @@
 @echo off
-echo Starting RAG Backend Server...
+setlocal EnableDelayedExpansion
+echo Starting RAG Backend Server with Docker...
 
-REM Set the OpenAI API Key
-set OPENAI_API_KEY=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
+REM Load environment variables from .env file
+if exist .env (
+    for /f "usebackq tokens=1,* delims==" %%a in (.env) do (
+        set "key=%%a"
+        if not "!key!"=="" if not "!key:~0,1!"=="#" (
+            set "!key!=%%b"
+        )
+    )
+)
 
 REM Navigate to the project directory
 cd /d "C:\Users\Aeron\Documents\Perso Files\Python\DocuChatAI"
 
-REM Start the backend
-cd backend
-python -m app.main
+echo Checking if Docker is running...
+docker version >nul 2>&1
+if %errorlevel% neq 0 (
+    echo ❌ Docker is not running or not installed!
+    echo Please start Docker Desktop and try again.
+    pause
+    exit /b 1
+)
+
+echo ✅ Docker is running!
+
+echo.
+echo Starting backend service...
+echo.
+
+REM Start only the backend service
+docker compose up backend
 
 pause
 

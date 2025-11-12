@@ -5,7 +5,7 @@ from pydantic import BaseModel
 import uvicorn
 
 from .pdf_loader import PDFLoader
-from .embeddings_sqlite import EmbeddingManager
+from .embeddings_postgres import EmbeddingManager
 from .chat import ChatManager
 
 app = FastAPI(title="RAG Chatbot API", version="1.0.0")

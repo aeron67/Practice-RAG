@@ -3,7 +3,7 @@ import logging
 from typing import List, Optional
 from pypdf import PdfReader
 from pypdf.errors import PdfReadError, FileNotDecryptedError
-from langchain.text_splitter import RecursiveCharacterTextSplitter
+from langchain_text_splitters import RecursiveCharacterTextSplitter
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)

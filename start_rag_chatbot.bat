@@ -1,40 +1,75 @@
 @echo off
-echo Starting RAG Chatbot Application...
+echo Starting RAG Chatbot Application with Docker...
 echo.
 
-REM Set the OpenAI API Key for this session
-set OPENAI_API_KEY=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
+REM Load environment variables from .env file
+if exist .env (
+    for /f "usebackq tokens=1,2 delims==" %%a in (.env) do (
+        if not "%%a"=="" if not "%%a:~0,1%"=="#" set "%%a=%%b"
+    )
+)
 
 REM Navigate to the project directory
 cd /d "C:\Users\Aeron\Documents\Perso Files\Python\DocuChatAI"
 
-echo Starting Backend Server...
-start "RAG Backend" cmd /k "cd backend && python -m app.main"
+echo Checking if Docker is running...
+docker version >nul 2>&1
+if %errorlevel% neq 0 (
+    echo ❌ Docker is not running or not installed!
+    echo Please start Docker Desktop and try again.
+    pause
+    exit /b 1
+)
 
-REM Wait a few seconds for backend to start
-timeout /t 5 /nobreak > nul
-
-echo Starting Frontend Server...
-start "RAG Frontend" cmd /k "streamlit run frontend/app.py --server.port 8508"
+echo ✅ Docker is running!
 
 echo.
-echo ✅ RAG Chatbot is starting up!
+echo Starting all services with Docker Compose...
+echo This may take a few minutes on first run...
 echo.
-echo Backend will be available at: http://localhost:8000
-echo Frontend will be available at: http://localhost:8508
+
+REM Start all services with Docker Compose
+docker-compose up -d
+
+if %errorlevel% neq 0 (
+    echo ❌ Failed to start services!
+    echo Check the error messages above.
+    pause
+    exit /b 1
+)
+
+echo.
+echo ✅ All services are starting up!
+echo.
+
+REM Wait for services to be healthy
+echo Waiting for services to be ready...
+timeout /t 10 /nobreak > nul
+
+REM Check if services are running
+docker-compose ps
+
+echo.
+echo 🎉 RAG Chatbot is now running!
+echo.
+echo 📍 Access your application:
+echo   • Frontend: http://localhost:8501
+echo   • Backend API: http://localhost:8000
+echo   • PostgreSQL: localhost:5432
 echo.
 echo Press any key to open the frontend in your browser...
 pause > nul
 
 REM Open the frontend in the default browser
-start http://localhost:8508
+start http://localhost:8501
 
 echo.
-echo 🎉 RAG Chatbot is now running!
+echo 📋 Useful commands:
+echo   • View logs: docker-compose logs -f
+echo   • Stop services: docker-compose down
+echo   • Restart services: docker-compose restart
+echo   • View status: docker-compose ps
 echo.
-echo To stop the application:
-echo 1. Close both command windows that opened
-echo 2. Or press Ctrl+C in each window
-echo.
+echo Press any key to exit...
 pause
 

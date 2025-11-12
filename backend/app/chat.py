@@ -1,8 +1,8 @@
 import os
 from typing import List, Dict, Any
 from langchain_openai import ChatOpenAI
-from langchain.schema import HumanMessage, SystemMessage
-from .embeddings import EmbeddingManager
+from langchain_core.messages import HumanMessage, SystemMessage
+from .embeddings_postgres import EmbeddingManager
 
 class ChatManager:
     def __init__(self, embedding_manager: EmbeddingManager):

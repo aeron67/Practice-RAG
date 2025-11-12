@@ -10,8 +10,7 @@ st.set_page_config(
 )
 
 # Get backend URL from environment or use default
-# In Replit, use localhost since both frontend and backend are on the same machine
-BACKEND_URL = "http://localhost:8000"
+BACKEND_URL = os.environ.get("BACKEND_URL", "http://localhost:8000")
 
 # Add debug info
 st.sidebar.write(f"🔗 Backend URL: {BACKEND_URL}")
